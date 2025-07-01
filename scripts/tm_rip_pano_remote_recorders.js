@@ -187,6 +187,15 @@
                     item.type_name = deviceData.TypeName || '';
                 }
 
+                function formatPanoptoDate(val) {
+                    if (typeof val === 'string' && /^\/Date\((\d+)\)\/$/.test(val)) {
+                        const ms = parseInt(val.match(/^\/Date\((\d+)\)\//)[1], 10);
+                        const d = new Date(ms);
+                        const pad = n => n.toString().padStart(2, '0');
+                        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+                    }
+                    return val;
+                }
 
                 for (const item of ripped) {
                     rows.push([
@@ -202,12 +211,12 @@
                         item.AudioThumbnail_IsSilent,
                         item.AudioThumbnail_MissingData,
                         item.AudioThumbnail_Status,
-                        item.AudioThumbnail_Timestamp,
+                        formatPanoptoDate(item.AudioThumbnail_Timestamp),
                         item.VideoThumbnail_Src,
                         item.VideoThumbnail_IsSilent,
                         item.VideoThumbnail_MissingData,
                         item.VideoThumbnail_Status,
-                        item.VideoThumbnail_Timestamp,
+                        formatPanoptoDate(item.VideoThumbnail_Timestamp),
                         item.devices[0]?.Record || '',
                         item.devices[0]?.DeviceId || '',
                         item.devices[0]?.Width || '',
