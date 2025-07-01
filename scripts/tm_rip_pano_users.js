@@ -34,7 +34,7 @@
         notification.textContent = 'Processing...';
         try {
             const ripped = [];
-            const rows = [['user_key', 'user_id', 'full_name', 'email']];
+            const rows = [['user_key', 'user_id', 'full_name', 'email', 'affiliation_name', 'is_internal', 'date_added', 'last_login', 'system_role', 'creator_roles', 'viewer_roles', 'roles']];
             const pageSize = 1000; // 250;
             let totalUsers = null;
 
@@ -69,15 +69,33 @@
                 let page = 0;
                 let fetched = 0;
                 notification.textContent = 'Fetching users...';
+                function formatPanoptoDate(dateStr) {
+                    if (!dateStr) return '';
+                    // Panopto date format: "/Date(1716552466000)/"
+                    const match = /\/Date\((\d+)\)\//.exec(dateStr);
+                    if (!match) return '';
+                    const date = new Date(Number(match[1]));
+                    const pad = n => n.toString().padStart(2, '0');
+                    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+                }
                 while (true) {
                     const data = await fetchUsersPage(page);
                     if (totalUsers === null) totalUsers = data.TotalNumber;
                     for (const user of data.Results) {
+
                         ripped.push({
                             user_key: user.UserKey || '',
                             user_id: user.ID || '',
                             full_name: user.FullName || '',
-                            email: user.Email || ''
+                            email: user.Email || '',
+                            affiliation_name: user.AffiliationName || '',
+                            is_internal: user.IsInternal || false,
+                            date_added: user.DateAdded,
+                            last_login: user.LastLogin,
+                            system_role: user.SystemRole || '',
+                            creator_roles: user.CreatorRoles || '',
+                            viewer_roles: user.ViewerRoles || '',
+                            roles: user.Roles || []
                         });
                     }
                     fetched += data.Results.length;
@@ -90,7 +108,27 @@
                         item.user_key,
                         item.user_id,
                         item.full_name,
-                        item.email
+                        item.email,
+                        item.affiliation_name,
+                        item.is_internal,
+                        formatPanoptoDate(item.date_added),
+                        formatPanoptoDate(item.last_login),
+                        item.system_role,
+                        item.creator_roles,
+                        item.viewer_roles,
+                        JSON.stringify(item.roles.map(role => {
+                            var r = {
+                                id: role.ID || '',
+                                name: role.Name || '',
+                            };
+                            if (role.HideFromShareDropDown) {
+                                r.hide_from_share_dropdown = role.HideFromShareDropDown;
+                            }
+                            if (role.SystemDefault) {
+                                r.system_default = role.SystemDefault;
+                            }
+                            return r;
+                        }))
                     ]);
                 }
                 const csv = rows.map(row => row.map(escapeCSV).join(',')).join('\r\n');
@@ -145,3 +183,4 @@
         }
     });
 })();
+
